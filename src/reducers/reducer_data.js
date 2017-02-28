@@ -206,7 +206,8 @@ export default function(state = [], action)
             row[j]['color'] = "";
           });
         });
-        const request = axios.post(urla, data);
+        const urla = 'http://localhost:5000/';
+        const request = Observable.ajax.post(urla,JSON.stringify(data));
         return data;
         break;
       }
