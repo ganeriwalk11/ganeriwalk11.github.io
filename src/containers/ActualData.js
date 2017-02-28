@@ -252,45 +252,6 @@ class ActualData extends Component {
         }
     }
 
-    handleDoubleClick(event) {
-        let a = event.target;
-        var alpha = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
-        let fxBar = document.getElementById("fbar");
-        let rowno = Number(a.className.substring(1, a.className.length));
-        let colNo = alpha.indexOf(a.className[0]);
-        let data;
-        let stream$ = Observable.fromEvent(a, 'dblclick').delay(300);
-        stream$.subscribe((e) => {
-            fxBar.className = a.id;
-            if (Object.keys(this.props.data[rowno - 1][colNo]["fx"]).length > 0) {
-                data = this.props.data[rowno - 1][colNo]["fx"]["formula"];
-            }
-            else if (this.props.data[rowno - 1][colNo]["url"]) {
-                data = this.props.data[rowno - 1][colNo]["url"];
-            }
-            else {
-                data = this.props.data[rowno - 1][colNo]["value"];
-            }
-            this.props.inputEdit(data);
-            fxBar.focus();
-            this.fbarData.col = colNo;
-            this.fbarData.row = rowno - 1;
-        });
-        var stream1$ = Observable.fromEvent(fxBar, 'keyup')
-            .map(function (e) { return e.target; })
-        stream1$.subscribe((elem) => {
-            var p = document.getElementById(elem.className);
-            p.innerText = elem.innerText;
-        });
-    }
-
-    fxBlur(event) {
-        if (this.fbarData.col !== "undefined") {
-            this.checkBlur(this.fbarData.row, this.fbarData.col, event.target.innerText);
-        }
-        event.target.innerText = "";
-    }
-
     saveData() {
         var dupdata = this.props.data;
         this.props.postData(dupdata);
@@ -310,6 +271,91 @@ class ActualData extends Component {
 
     addColumn = () => {
         this.props.addColData();
+    }
+
+    refFxCallback = (fxelem) => {
+        var alpha = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+        if (fxelem) {
+            var element = ReactDOM.findDOMNode(fxelem);
+            fxelem.contentEditable = true;
+
+            var streamKeyUp$ = Observable.fromEvent(element, 'keyup')
+                .map(function (e) { return e.target; })
+            streamKeyUp$.subscribe((elem) => {
+                var cell = document.getElementById(elem.className);
+                cell.innerText = elem.innerText;
+            });
+
+            var streamFxBlur$ = Observable.fromEvent(element, 'blur')
+                .map(function (e) { return e; })
+            streamFxBlur$.subscribe((e) => {
+                var dupdata = this.props.data;
+                var j = alpha.indexOf(e.target.className[0]);
+                var i = Number(e.target.className.substr(1, e.target.className.length)) - 1;
+                this.checkBlur(i, j, "zaq", e);
+                var cell = document.getElementById(e.target.className);
+                cell.innerText = dupdata[i][j]["value"];               
+            });
+
+            var streamFxClick$ = Observable.fromEvent(element, 'click')
+                .map(function (e) { return e; })
+            streamFxClick$.subscribe((e) => {
+                var cell = document.getElementById(e.target.className);
+                cell.innerText = e.target.innerText;                
+            });             
+
+        }
+    }
+
+    refCallback = (item) => {
+        var alpha = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+        var dupdata = this.props.data;
+        if (item) {
+            item.contentEditable = true;
+            var element = ReactDOM.findDOMNode(item);
+
+            var streamFocus$ = Observable.fromEvent(element, 'focus')
+                .map(function (e) { return e.target; })
+            streamFocus$.subscribe((elem) => {
+                this.prevValue.push(elem.innerText);
+            });
+
+            var streamBlur$ = Observable.fromEvent(element, 'blur')
+                .map(function (e) { return e; })
+            streamBlur$.subscribe((e) => {
+                var j = alpha.indexOf(e.target.id[0]);
+                var i = Number(e.target.id.substr(1, e.target.id.length)) - 1;
+                this.checkBlur(i, j, "zaq", e);
+            });
+
+            var streamKeyUp$ = Observable.fromEvent(element, 'keyup')
+                .map(function (e) { return e.target; })
+            streamKeyUp$.subscribe((elem) => {
+                var fxelem = document.getElementById("fbar");
+                fxelem.innerText = elem.innerText;
+                fxelem.className = elem.id;
+            });
+
+            var streamClick$ = Observable.fromEvent(element, 'click')
+                .map(function (e) { return e.target; })
+            streamClick$.subscribe((elem) => {
+                var j = alpha.indexOf(elem.id[0]);
+                var i = Number(elem.id.substr(1, elem.id.length)) - 1;
+                var data;
+                if (Object.keys(dupdata[i][j]["fx"]).length > 0) {
+                    data = dupdata[i][j]["fx"]["formula"];
+                }
+                else if (dupdata[i][j]["url"]) {
+                    data = dupdata[i][j]["url"];
+                }
+                else {
+                    data = dupdata[i][j]["value"];
+                }
+                var fxelem = document.getElementById("fbar");
+                fxelem.innerText = data;
+                fxelem.className = elem.id;
+            });
+        }
     }
 
     renderHead = (data) => {
@@ -336,14 +382,11 @@ class ActualData extends Component {
             var s = alpha[j] + (i + 1);
             return (
                 <td
-                    ref={function (e) { if (e) e.contentEditable = true; }}
+                    ref={this.refCallback}
                     key={s}
                     id={s}
                     style={{ color: dupdata[j]['color'] }}
                     className={s}
-                    onFocus={this.checkFocus.bind(this)}
-                    onBlur={this.checkBlur.bind(this, i, j, "zaq")}
-                    onClick={this.handleDoubleClick.bind(this)}
                 >{dupdata[j]['value']}</td>
             );
         }));
@@ -357,7 +400,7 @@ class ActualData extends Component {
                 <button id="save" onClick={this.saveData.bind(this)}>SAVE</button>
                 <button id="addRow" onClick={this.addRow.bind(this)}>ADD ROW</button>
                 <button id="addCol" onClick={this.addColumn.bind(this)}>ADD COLUMN</button>
-                <table><tbody><tr><td>fxbar:</td><td contentEditable={true} id="fbar" ref={function (e) { if (e != null) e.contentEditable = true; }} onBlur={this.fxBlur.bind(this)}>{this.props.vad}</td></tr></tbody></table>
+                <table><tbody><tr><td>fxbar:</td><td id="fbar" ref={this.refFxCallback} >{this.props.vad}</td></tr></tbody></table>
                 <table>
                     <thead>{this.renderHead(this.props.data)}</thead>
                     <tbody>{this.props.data.map(this.renderData)}</tbody>
