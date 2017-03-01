@@ -1,13 +1,15 @@
 import Rx from 'rxjs';
 import 'rxjs/add/observable/dom/ajax';
 import { Observable } from 'rxjs/Observable';
+import { ajax } from 'rxjs/observable/dom/ajax';
 import axios from 'axios';
 
 export const POST_DATA = 'POST_DATA';
 export const FETCH_DATA = 'FETCH_DATA';
 export const FETCH_FUL = 'FETCH_USER_FULFILLED';
-export const FETCH_FULL = 'FETCH_USER_F';
 export const ADD_DATA = 'ADD_DATA';
+export const ADDED_ROW = 'ADDED_ROW';
+export const ADDED_COL = 'ADDED_COL';
 export const DELETE_ROW = 'DELETE_ROW';
 export const DELETE_COL = 'DELETE_COL';
 export const ADD_COL = 'ADD_COL';
@@ -17,6 +19,8 @@ export const S_COLOR = 'S_COLOR';
 export const CHANGE_COLOR = 'CHANGE_COLOR';
 export const INSERTUrl = 'INSERTUrl';
 export const RUN_URL = 'RUN_URL';
+export const GET_URL = 'GET_URL';
+export const REJECTED_URL = 'REJECTED_URL';
 
 const url = 'src/jsonData/mainData.json';
 const urla = 'http://localhost:5000/';
@@ -27,6 +31,123 @@ export const fetchUserEpic = action$ =>
       Observable.ajax.getJSON(url)
         .map(response => fetchUserFulfilled(response))
     );
+
+// export const RunURLEpic = action$ =>
+//   action$.ofType(RUN_URL)
+//     .mergeMap(action => {
+//       var url = action.payload.url;
+//       Observable.ajax.get(url)
+//         .map(function(response){urlwork(payload)})
+//     });
+
+// export const RunURLEpic = action$ =>
+//   action$.ofType(RUN_URL)
+//     .map(function(action){
+//       var i = action.payload.i;
+//       var j = action.payload.j;
+//       var url = action.payload.url;
+//       var x=[],y=[];
+// //      Observable.ajax.getJSON(url).map(function(resp) { return resp}).subscribe(function(val){x.push(val.a);console.log(x);return urlwork(x)});
+//       Observable.of(url).map(function(url){
+//         return ajax.getJSON(url);
+//       }).subscribe(function(val){x.push(val);console.log(val);return urlwork(x);});
+//       // return urlwork(x);
+//       //ajaxStream$.subscribe((val) => x = val.response.a);
+//       // Observable.ajax.get(url)
+//       //   .map(function(response){urlwork(payload)})
+//       //return {type:GET_URL};
+//       // console.log(x);
+//       //return urlwork(x);
+//       x[0].subscribe((val) => y.push(val));
+//       return urlwork(y);
+//     });
+
+export const RunURLEpic = action$ =>
+  action$.ofType(RUN_URL)
+    .mergeMap(action =>
+      Observable.ajax.getJSON(`${action.payload.url}`)
+      .map(resp => urlwork(resp,`${action.payload.i}`,`${action.payload.j}`))
+      .catch(error => [{type: REJECTED_URL,payload:error,i:`${action.payload.i}`,j:`${action.payload.j}`}] )
+    );
+
+
+export const AddRowEpic = action$ =>
+  action$.ofType(ADD_DATA)
+    .map(function (action) {
+      var add = [];
+      var len;
+      if (action.payload.length > 0)
+        len = action.payload.length;
+      else
+        len = 1;
+      Observable.of(add).map(function (add) {
+        function counter(j, i) {
+          ;
+          if (j < i) {
+            add[j] = { "value": "", "color": "", "fx": {}, "dep": [], "url": "" };
+          } else {
+            return;
+          }
+          counter(++j, i);
+        }
+        counter(0, len);
+        return add;
+      }).subscribe(function (add) { });
+      return RowAdded(add);
+    });
+
+export const SaveDataEpic = action$ =>
+  action$.ofType(POST_DATA)
+    .mergeMap(action =>
+      Observable.ajax.post(urla,`${action.payload}`)
+        .map(response => [{type:SAVE_DATA,payload:response}])
+    );
+
+export const AddColEpic = action$ =>
+  action$.ofType(ADD_COL)
+    .map(function (action) {
+      var dupdata = [];
+      Observable.from(action.payload).concatMap(function (row) {
+        row[row.length] = { "value": "", "color": "", "fx": {}, "dep": [], "url": "" };
+        return Observable.of(row);
+      }).subscribe(function (val) { dupdata.push(val) });
+      return ColAdded(dupdata);
+    });
+
+export const urlwork = (payload,i,j) => (
+  {
+    type: GET_URL,
+    payload : payload,
+    i: i,
+    j: j
+  });
+
+
+export const RowAdded = payload => (
+  {
+    type: ADDED_ROW,
+    payload
+  });
+
+export const ColAdded = payload => (
+  {
+    type: ADDED_COL,
+    payload
+  });
+
+export function addData(data) {
+  return {
+    type: ADD_DATA,
+    payload: data
+  };
+};
+
+export function addColData(data) {
+  return {
+    type: ADD_COL,
+    payload: data
+  };
+};
 
 export const fetchUserFulfilled = payload => (
   {
@@ -39,14 +160,6 @@ export function fetchData() {
     type: FETCH_DATA
   }
 };
-
-export function fetchUrlData(data) {
-  return {
-    type: FETCH_FULL,
-    payload: data
-  };
-};
-
 
 export function postData(data) {
   return {
@@ -65,18 +178,6 @@ export function deleteCol(colno) {
   return {
     type: DELETE_COL,
     payload: colno
-  };
-};
-
-export function addData() {
-  return {
-    type: ADD_DATA
-  };
-};
-
-export function addColData() {
-  return {
-    type: ADD_COL
   };
 };
 
@@ -126,12 +227,14 @@ export function writeUrl(i, j, urlTest, timer) {
   };
 };
 
-export function runUrl(i, j) {
+export function runUrl(i, j,url,timer) {
   return {
     type: RUN_URL,
     payload: {
       i: i,
-      j: j
+      j: j,
+      url: url, 
+      timer: timer
     }
   };
 };
