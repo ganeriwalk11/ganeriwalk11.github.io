@@ -29,33 +29,55 @@ class ActualData extends Component {
         super(props);
         this.prevValue = [];
         this.fbarData = {};
-        this.flag;
+        this.flag = 0;
     }
 
-    componentWillMount() {
-        this.props.fetchData();
-    }
+    // componentDidUpdate() {
+    //     var me = this;
+    //     if (!(me.flag)) {
+    //         var dupdata = this.props.data;
+    //         dupdata.map(function (row, i) {
+    //             row.map(function (col, j) {
+    //                 if (row[j]["url"].length > 0) {
+    //                     me.checkBlur(i, j, row[j]["url"]);
+    //                 }
+    //             });
+    //         });
+    //     }
+    //     me.flag = 1;
+    // }
 
     componentDidUpdate() {
         var me = this;
         if (!(me.flag)) {
             var dupdata = this.props.data;
-            dupdata.map(function (row, i) {
-                row.map(function (col, j) {
-                    if (row[j]["url"].length > 0) {
-                        me.checkBlur(i, j, row[j]["url"]);
+            var stream$ = Observable.from(dupdata).map(function (row,i){
+               var x = row.map(function(col,j){
+                    if(col['url'].length > 0)
+                    {
+                        return [col['url'],i,j];
                     }
+                    return 1;
                 });
+                for(var k =0; k<x.length;k++)
+                {
+                    if(x[k] != 1)
+                        return x[k];
+                }
+                        
             });
-        }
+            stream$.subscribe(function(url){
+                me.checkBlur(url[1],url[2],url[0]);
+            },function(err){
+                console.log(err);
+            }); 
         me.flag = 1;
     }
+}
 
-    checkFocus(event) {
-        this.prevValue.push(event.target.innerText);
-    }
 
     checkBlur(i, j, q, event) {
+        console.log(i,j);
         var dupdata = this.props.data;
         var me = this;
         let len = dupdata[0].length;
@@ -294,15 +316,15 @@ class ActualData extends Component {
                 var i = Number(e.target.className.substr(1, e.target.className.length)) - 1;
                 this.checkBlur(i, j, "zaq", e);
                 var cell = document.getElementById(e.target.className);
-                cell.innerText = dupdata[i][j]["value"];               
+                cell.innerText = dupdata[i][j]["value"];
             });
 
             var streamFxClick$ = Observable.fromEvent(element, 'click')
                 .map(function (e) { return e; })
             streamFxClick$.subscribe((e) => {
                 var cell = document.getElementById(e.target.className);
-                cell.innerText = e.target.innerText;                
-            });             
+                cell.innerText = e.target.innerText;
+            });
 
         }
     }
