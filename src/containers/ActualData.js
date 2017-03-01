@@ -12,15 +12,16 @@ import { postData } from '../actions/index';
 import { addData } from '../actions/index';
 import { deleteRow } from '../actions/index';
 import { deleteCol } from '../actions/index';
-import { addColData } from '../actions/index';
+import { addColData } from '../actions/index';  
 import { checkIntegerAction } from '../actions/index';
 import { fetchUserFulfilled } from '../actions/index';
-import { fetchUrlData } from '../actions/index';
 import { writeUrl } from '../actions/index';
 import { runUrl } from '../actions/index';
 import { stringColor } from '../actions/index';
 import { changeColor } from '../actions/index';
 import { fetchData } from '../actions/index';
+
+export var interval;
 
 require("babel-polyfill");
 
@@ -31,21 +32,6 @@ class ActualData extends Component {
         this.fbarData = {};
         this.flag = 0;
     }
-
-    // componentDidUpdate() {
-    //     var me = this;
-    //     if (!(me.flag)) {
-    //         var dupdata = this.props.data;
-    //         dupdata.map(function (row, i) {
-    //             row.map(function (col, j) {
-    //                 if (row[j]["url"].length > 0) {
-    //                     me.checkBlur(i, j, row[j]["url"]);
-    //                 }
-    //             });
-    //         });
-    //     }
-    //     me.flag = 1;
-    // }
 
     componentDidUpdate() {
         var me = this;
@@ -63,18 +49,18 @@ class ActualData extends Component {
                 {
                     if(x[k] != 1)
                         return x[k];
-                }
-                        
+                }                       
             });
             stream$.subscribe(function(url){
-                me.checkBlur(url[1],url[2],url[0]);
+                if(url){
+                    me.checkBlur(url[1],url[2],url[0]);
+                }
             },function(err){
                 console.log(err);
             }); 
         me.flag = 1;
     }
 }
-
 
     checkBlur(i, j, q, event) {
         console.log(i,j);
@@ -257,8 +243,8 @@ class ActualData extends Component {
                         var timer = target.slice(target.indexOf(',') + 1, target.indexOf(')'));
                         if (regex.test(urlTest)) {
                             this.props.writeUrl(i, j, target, timer);
-                            this.props.runUrl(i, j);
-                            setInterval(() => { this.props.runUrl(i, j) }, timer);
+                            this.props.runUrl(i, j,urlTest,timer);
+                            interval = setInterval(() => { this.props.runUrl(i, j,urlTest,timer) }, timer);
                         }
                         else {
                             this.props.stringColor(i, j, target, "red");
@@ -288,11 +274,11 @@ class ActualData extends Component {
     }
 
     addRow = () => {
-        this.props.addData();
+        this.props.addData(this.props.data[0]);
     }
 
     addColumn = () => {
-        this.props.addColData();
+        this.props.addColData(this.props.data);
     }
 
     refFxCallback = (fxelem) => {
@@ -450,7 +436,6 @@ function mapDispatchToProps(dispatch) {
         deleteCol: bindActionCreators(deleteCol, dispatch),
         addColData: bindActionCreators(addColData, dispatch),
         inputEdit: bindActionCreators(inputEdit, dispatch),
-        fetchUrlData: bindActionCreators(fetchUrlData, dispatch),
         writeUrl: bindActionCreators(writeUrl, dispatch),
         runUrl: bindActionCreators(runUrl, dispatch),
         stringColor: bindActionCreators(stringColor, dispatch),
