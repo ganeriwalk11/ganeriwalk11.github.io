@@ -184,6 +184,7 @@ export default function(state = [], action)
         var i = action.payload.i;
         var j = action.payload.j;
         var target = data[i][j]["url"];
+        debugger;
         var urlTest = target.slice(4,target.indexOf(','));
         var timer = target.slice(target.indexOf(',')+1,target.indexOf(')'));
         
