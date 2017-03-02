@@ -4,6 +4,7 @@ import { fetchUserEpic } from '../actions/index';
 import { inputEditEpic } from '../actions/validations';
 import { AddRowEpic } from '../actions/index';
 import { AddColEpic } from '../actions/index';
+import { AddURLEpic } from '../actions/index';
 import { RunURLEpic } from '../actions/index';
 import { SaveDataEpic } from '../actions/index';
 
@@ -17,7 +18,7 @@ const rootReducer = combineReducers({
 });
 
 export const rootEpic = combineEpics(
-  fetchUserEpic,inputEditEpic,AddRowEpic,AddColEpic,RunURLEpic
+  fetchUserEpic,inputEditEpic,AddRowEpic,AddColEpic,RunURLEpic,SaveDataEpic,AddURLEpic
 );
 
 export default rootReducer;
