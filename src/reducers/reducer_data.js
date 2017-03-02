@@ -3,7 +3,7 @@ import { ajax } from 'rxjs/observable/dom/ajax';
 import { Observable } from 'rxjs/Observable';
 import axios from 'axios';
 
-import { POST_DATA } from '../actions/index';
+import { SAVE_DATA } from '../actions/index';
 import { FETCH_DATA } from '../actions/index';
 import { FETCH_FUL } from '../actions/index';
 import { DELETE_ROW } from '../actions/index';
@@ -14,16 +14,18 @@ import { CHECK_INTEGER } from '../actions/index';
 import { APPLY_FUNCTION } from '../actions/index';
 import { S_COLOR } from '../actions/index';
 import { CHANGE_COLOR } from '../actions/index';
-import { INSERTUrl } from '../actions/index';
 import { RUN_URL } from '../actions/index';
 import { GET_URL } from '../actions/index';
+import { ADDED_URL } from '../actions/index';
 import { REJECTED_URL } from '../actions/index';
+import { setValue } from '../containers/ActualData';
 
-import interval from '../containers/ActualData.js'
 const rxFetch = require('rxjs-fetch');
 const urla = 'http://localhost:5000/';
 
+
 export default function (state = [], action) {
+
   switch (action.type) {
     case FETCH_DATA:
       {
@@ -63,12 +65,12 @@ export default function (state = [], action) {
         var i = action.payload.i;
         var j = action.payload.j;
         var checkInt$ = Observable.of(data);
-        var check$ = checkInt$.map(function(data){
-          data[i][j]['color'] = 'darkgreen';
+        var check$ = checkInt$.map(function (data) {
+          data[i][j]['color'] = 'forestgreen';
           data[i][j]['value'] = action.payload.target;
           return data;
         });
-        var stream$ = check$.subscribe((data)=> dupdata = data)
+        var stream$ = check$.subscribe((data) => dupdata = data)
         return dupdata;
         break;
       }
@@ -118,51 +120,39 @@ export default function (state = [], action) {
         break;
       }
 
-    case INSERTUrl:
+    case ADDED_URL:
       {
-        var data = [...state];
-        var i = action.payload.i;
-        var j = action.payload.j;
-        var urla = action.payload.urlTest;
-        var timer = action.payload.timer;
-        data[i][j]['url'] = urla;
+        var data = action.payload;
         return data;
         break;
       }
 
     case GET_URL:
-    {
-      var data = [...state];
-      var i = action.i;
-      var j = action.j;
-      var val = action.payload;
-      data[i][j]['value'] = val['a'];
-      return data;
-    }
-
-    case REJECTED_URL:
-    {
-      var data = [...state];
-      var i = action.i;
-      var j = action.j;
-      var val = action.payload;
-      data[i][j]['value'] = "ERROR";
-      data[i][j]['url'] = "";
-      clearInterval(interval);
-      return data;
-    }
-
-    case POST_DATA:
       {
         var data = [...state];
-        data.map(function (row) {
-          row.map(function (col, j) {
-            row[j]['color'] = "";
-          });
-        });
-        const urla = 'http://localhost:5000/';
-        const request = Observable.ajax.post(urla, JSON.stringify(data));
+        var i = action.i;
+        var j = action.j;
+        var val = action.payload;
+        data[i][j]['value'] = val['a'];
         return data;
+      }
+
+    case REJECTED_URL:
+      {
+        var data = [...state];
+        var i = action.i;
+        var j = action.j;
+        var val = action.payload;
+        data[i][j]['value'] = "ERROR";
+        data[i][j]['url'] = "";
+        setValue(0);
+        return data;
+      }
+
+    case SAVE_DATA:
+      {
+        console.log(action.payload);
+        return state;
         break;
       }
 
