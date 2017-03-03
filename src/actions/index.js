@@ -16,7 +16,6 @@ export const DELETE_COL = 'DELETE_COL';
 export const ADD_COL = 'ADD_COL';
 export const CHECK_INTEGER = 'CHECK_INTEGER';
 export const APPLY_FUNCTION = 'APPLY_FUNCTION';
-export const APPLIED_FUNC = 'APPLIED_FUNC';
 export const S_COLOR = 'S_COLOR';
 export const CHANGE_COLOR = 'CHANGE_COLOR';
 export const INSERTUrl = 'INSERTUrl';
@@ -24,6 +23,7 @@ export const RUN_URL = 'RUN_URL';
 export const GET_URL = 'GET_URL';
 export const REJECTED_URL = 'REJECTED_URL';
 export const ADDED_URL = 'ADDED_URL';
+export const DUMMY = 'DUMMY';
 
 const url = 'src/jsonData/mainData.json';
 const urla = 'http://localhost:5000/';
@@ -35,6 +35,35 @@ export const fetchUserEpic = action$ =>
         .map(response => fetchUserFulfilled(response))
     );
 
+export const SaveDataEpic = action$ =>
+  action$.ofType(POST_DATA)
+    .map(function(action){
+      var data = action.payload;
+      Observable.of(data).map(function(data){
+          data.map(function (row) {
+            row.map(function (col, j) {
+                row[j]['color'] = "";
+            });
+          });
+          return axios.post(urla,data);
+      }).subscribe((resp) => {});
+      return { type: SAVE_DATA, payload: data }
+    });
+
+export const AddURLEpic = action$ =>
+  action$.ofType(INSERTUrl)
+    .map(function (action) {
+      var data = action.payload.data;
+      var i = action.payload.i;
+      var j = action.payload.j;
+      var urlTest = action.payload.urlTest;
+      Observable.of(data).map(function (data) {
+        data[i][j]['url'] = [urlTest];
+        return data;
+      }).subscribe(function (data) { });
+      return URLAdded(data);
+    });
+
 export const RunURLEpic = action$ =>
   action$.ofType(RUN_URL)
     .mergeMap(action =>
@@ -42,14 +71,6 @@ export const RunURLEpic = action$ =>
         .map(resp => urlwork(resp, `${action.payload.i}`, `${action.payload.j}`))
         .catch(error => [{ type: REJECTED_URL, payload: error, i: `${action.payload.i}`, j: `${action.payload.j}` }])
     );
-
-export const AddURLEpic = action$ =>
-  action$.ofType(INSERTUrl)
-    .mergeMap(action =>
-      Observable.of(`${action.payload.data}`)
-        .map(function (data) { data[`${action.payload.i}`][`${action.payload.j}`]['url'] = [`${action.payload.urlTest}`]; return [{ type: ADDED_URL, payload: data }]; })
-    );
-
 
 export const AddRowEpic = action$ =>
   action$.ofType(ADD_DATA)
@@ -76,13 +97,6 @@ export const AddRowEpic = action$ =>
       return RowAdded(add);
     });
 
-export const SaveDataEpic = action$ =>
-  action$.ofType(POST_DATA)
-    .map(action =>
-      axios.post(urla, `${action.payload}`)
-        .map(response => [{ type: SAVE_DATA, payload: response }])
-    );
-
 export const AddColEpic = action$ =>
   action$.ofType(ADD_COL)
     .map(function (action) {
@@ -94,89 +108,54 @@ export const AddColEpic = action$ =>
       return ColAdded(dupdata);
     });
 
-export const ApplyFunctionEpic = action$ =>
-  action$.ofType(APPLY_FUNCTION)
-    .map(function (action) {
-      var data = action.payload.data;
-      var i = action.payload.i;
-      var j = action.payload.j;
-      var op1i = action.payload.op1i;
-      var op1j = action.payload.op1j;
-      var op2i = action.payload.op2i;
-      var op2j = action.payload.op2j;
-      var ans = action.payload.ans;
-      var color = action.payload.color;
-      var a = action.payload.a;
-      let alpha = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
-      debugger;
-      Observable.of(data).map(function (data) {
+export const fetchUserFulfilled = payload => (
+  {
+    type: FETCH_FUL,
+    payload
+  });
 
-        if (data[i][j]["fx"]["op1i"]) {
-          data[data[i][j]["fx"]["op1i"]][data[i][j]["fx"]["op1j"]]["dep"].map(function (obj, q) {
-            if (obj["row"] == i && obj["column"] == j) {
-              data[data[i][j]["fx"]["op1i"]][data[i][j]["fx"]["op1j"]]["dep"].splice(q, 1);
-            }
-          });
-          data[i][j]["fx"]["formula"] = "";
-          delete data[i][j]["fx"]["op1i"];
-          delete data[i][j]["fx"]["op1j"];
-          data[i][j]["fx"] = {};
-        }
-        if (data[i][j]["fx"]["op2i"]) {
-          data[data[i][j]["fx"]["op2i"]][data[i][j]["fx"]["op2j"]]["dep"].map(function (obj, q) {
-            if (obj["row"] == i && obj["column"] == j) {
-              data[data[i][j]["fx"]["op2i"]][data[i][j]["fx"]["op2j"]]["dep"].splice(q, 1);
-            }
-          });
-          data[i][j]["fx"]["formula"] = "";
-          delete data[i][j]["fx"]["op2i"];
-          delete data[i][j]["fx"]["op2j"];
-          data[i][j]["fx"] = {};
-        }
-        if (op1i !== "") {
-          var flag1 = 0;
-          if (data[op1i][op1j]["dep"].length) {
-            flag1 = data[op1i][op1j]["dep"].map(function (obj) {
-              if (obj['row'] == i) {
-                if (obj['column'] == j) {
-                  return 1;
-                }
-              }
-            });
-          }
-          if (flag1 == 0) {
-            data[op1i][op1j]["dep"].push({ "row": i, "column": j });
-            data[i][j]["fx"]["op1i"] = op1i;
-            data[i][j]["fx"]["op1j"] = op1j;
-          }
-        }
+export function fetchData() {
+  return {
+    type: FETCH_DATA
+  }
+};
 
-        if (op2i !== "") {
-          var flag2 = 0;
-          if (data[op2i][op2j]["dep"].length) {
-            flag2 = data[op2i][op2j]["dep"].map(function (obj) {
-              if (obj['row'] == i) {
-                if (obj['column'] == j) {
-                  return 1;
-                }
-              }
-            });
-          }
-          if (flag2 == 0) {
-            data[op2i][op2j]["dep"].push({ "row": i, "column": j });
-            data[i][j]["fx"]["op2i"] = op2i;
-            data[i][j]["fx"]["op2j"] = op2j;
-          }
-        }
+export function postData(data) {
+  return {
+    type: POST_DATA,
+    payload: data
+  }
+};
 
-        data[i][j]["fx"]["formula"] = a;
-        data[i][j]["color"] = color;
-        data[i][j]['value'] = ans;
+export function writeUrl(i, j, urlTest, data) {
+  return {
+    type: INSERTUrl,
+    payload: {
+      i: i,
+      j: j,
+      urlTest: urlTest,
+      data: data
+    }
+  };
+};
 
-        return data;
-      }).subscribe(() => { });
-      return { type: APPLIED_FUNC, payload: data };
-    });
+export function runUrl(i, j, url, timer) {
+  return {
+    type: RUN_URL,
+    payload: {
+      i: i,
+      j: j,
+      url: url,
+      timer: timer
+    }
+  };
+};
+
+export const URLAdded = payload => (
+  {
+    type: ADDED_URL,
+    payload
+  });
 
 export const urlwork = (payload, i, j) => (
   {
@@ -185,7 +164,6 @@ export const urlwork = (payload, i, j) => (
     i: i,
     j: j
   });
-
 
 export const RowAdded = payload => (
   {
@@ -211,31 +189,6 @@ export function addColData(data) {
     type: ADD_COL,
     payload: data
   };
-};
-
-export const fetchUserFulfilled = payload => (
-  {
-    type: FETCH_FUL,
-    payload
-  });
-
-export function fetchData() {
-  return {
-    type: FETCH_DATA
-  }
-};
-
-export function postData(data) {
-  debugger;
-  data.map(function (row) {
-    row.map(function (col, j) {
-      row[j]['color'] = "";
-    });
-  });
-  return {
-    type: POST_DATA,
-    payload: data
-  }
 };
 
 export function deleteRow(rowno) {
@@ -286,54 +239,17 @@ export function changeColor(i, j, color) {
   };
 };
 
-export function writeUrl(i, j, urlTest, data) {
-  debugger;
-  return {
-    type: INSERTUrl,
-    payload: {
-      i: i,
-      j: j,
-      urlTest: urlTest,
-      data: data
-    }
-  };
-};
-
-export function runUrl(i, j, url, timer) {
-  return {
-    type: RUN_URL,
-    payload: {
-      i: i,
-      j: j,
-      url: url,
-      timer: timer
-    }
-  };
-};
-
 export function applyFunc(j, a, i, data, color, op1, op2, op1i, op1j, op2i, op2j, operator) {
-  var a = a;
-  var data = data;
-  var color = color;
-  let alpha = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
-  var i = i;
-  var op1i = op1i;
-  var op1j = op1j;
-  var op2i = op2i;
-  var op2j = op2j;
-  var operator = operator;
-  var op1 = op1;
-  var op2 = op2;
   var ans;
   if (op1 !== "") {
     if (operator == '+') {
-      if (parseInt(data[op2i][op2j]['value'], 10))
+      if (parseInt(data[op2i][op2j]['value'], 10) == data[op2i][op2j]['value'])
         ans = op1 + parseInt(data[op2i][op2j]['value'], 10);
       else
         ans = op1 + 0;
     }
     else {
-      if (parseInt(data[op2i][op2j]['value'], 10))
+      if (parseInt(data[op2i][op2j]['value'], 10) == data[op2i][op2j]['value'])
         ans = op1 - parseInt(data[op2i][op2j]['value'], 10);
       else
         ans = op1 - 0;
@@ -342,13 +258,13 @@ export function applyFunc(j, a, i, data, color, op1, op2, op1i, op1j, op2i, op2j
 
   else if (op2 !== "") {
     if (operator == '+') {
-      if (parseInt(data[op1i][op1j]['value'], 10))
+      if (parseInt(data[op1i][op1j]['value'], 10) == data[op1i][op1j]['value'])
         ans = op2 + parseInt(data[op1i][op1j]['value'], 10);
       else
         ans = op2 + 0;
     }
     else {
-      if (parseInt(data[op1i][op1j]['value'], 10))
+      if (parseInt(data[op1i][op1j]['value'], 10) == data[op1i][op1j]['value'])
         ans = parseInt(data[op1i][op1j]['value'], 10) - op2;
       else
         ans = 0 - op2;
@@ -356,18 +272,18 @@ export function applyFunc(j, a, i, data, color, op1, op2, op1i, op1j, op2i, op2j
   }
 
   else if (op2i === "") {
-    if (parseInt(data[op1i][op1j]['value'], 10))
+    if (parseInt(data[op1i][op1j]['value'], 10) == data[op1i][op1j]['value'])
       ans = parseInt(data[op1i][op1j]['value'], 10)
     else
       ans = 0;
   }
   else {
     var operator1, operator2;
-    if (parseInt(data[op1i][op1j]['value'], 10))
+    if (parseInt(data[op1i][op1j]['value'], 10) == data[op1i][op1j]['value'])
       operator1 = parseInt(data[op1i][op1j]['value'], 10);
     else
       operator1 = 0;
-    if (parseInt(data[op2i][op2j]['value'], 10))
+    if (parseInt(data[op2i][op2j]['value'], 10) == data[op2i][op2j]['value'])
       operator2 = parseInt(data[op2i][op2j]['value'], 10);
     else
       operator2 = 0;
