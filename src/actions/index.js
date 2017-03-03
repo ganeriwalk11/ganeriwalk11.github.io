@@ -1,22 +1,29 @@
 import Rx from 'rxjs';
 import 'rxjs/add/observable/dom/ajax';
 import { Observable } from 'rxjs/Observable';
+import { ajax } from 'rxjs/observable/dom/ajax';
 import axios from 'axios';
 
 export const POST_DATA = 'POST_DATA';
+export const SAVE_DATA = 'SAVE_DATA';
 export const FETCH_DATA = 'FETCH_DATA';
 export const FETCH_FUL = 'FETCH_USER_FULFILLED';
-export const FETCH_FULL = 'FETCH_USER_F';
 export const ADD_DATA = 'ADD_DATA';
+export const ADDED_ROW = 'ADDED_ROW';
+export const ADDED_COL = 'ADDED_COL';
 export const DELETE_ROW = 'DELETE_ROW';
 export const DELETE_COL = 'DELETE_COL';
 export const ADD_COL = 'ADD_COL';
 export const CHECK_INTEGER = 'CHECK_INTEGER';
 export const APPLY_FUNCTION = 'APPLY_FUNCTION';
+export const APPLIED_FUNC = 'APPLIED_FUNC';
 export const S_COLOR = 'S_COLOR';
 export const CHANGE_COLOR = 'CHANGE_COLOR';
 export const INSERTUrl = 'INSERTUrl';
 export const RUN_URL = 'RUN_URL';
+export const GET_URL = 'GET_URL';
+export const REJECTED_URL = 'REJECTED_URL';
+export const ADDED_URL = 'ADDED_URL';
 
 const url = 'src/jsonData/mainData.json';
 const urla = 'http://localhost:5000/';
@@ -27,6 +34,184 @@ export const fetchUserEpic = action$ =>
       Observable.ajax.getJSON(url)
         .map(response => fetchUserFulfilled(response))
     );
+
+export const RunURLEpic = action$ =>
+  action$.ofType(RUN_URL)
+    .mergeMap(action =>
+      Observable.ajax.getJSON(`${action.payload.url}`)
+        .map(resp => urlwork(resp, `${action.payload.i}`, `${action.payload.j}`))
+        .catch(error => [{ type: REJECTED_URL, payload: error, i: `${action.payload.i}`, j: `${action.payload.j}` }])
+    );
+
+export const AddURLEpic = action$ =>
+  action$.ofType(INSERTUrl)
+    .mergeMap(action =>
+      Observable.of(`${action.payload.data}`)
+        .map(function (data) { data[`${action.payload.i}`][`${action.payload.j}`]['url'] = [`${action.payload.urlTest}`]; return [{ type: ADDED_URL, payload: data }]; })
+    );
+
+
+export const AddRowEpic = action$ =>
+  action$.ofType(ADD_DATA)
+    .map(function (action) {
+      var add = [];
+      var len;
+      if (action.payload.length > 0)
+        len = action.payload.length;
+      else
+        len = 1;
+      Observable.of(add).map(function (add) {
+        function counter(j, i) {
+          ;
+          if (j < i) {
+            add[j] = { "value": "", "color": "", "fx": {}, "dep": [], "url": "" };
+          } else {
+            return;
+          }
+          counter(++j, i);
+        }
+        counter(0, len);
+        return add;
+      }).subscribe(function (add) { });
+      return RowAdded(add);
+    });
+
+export const SaveDataEpic = action$ =>
+  action$.ofType(POST_DATA)
+    .map(action =>
+      axios.post(urla, `${action.payload}`)
+        .map(response => [{ type: SAVE_DATA, payload: response }])
+    );
+
+export const AddColEpic = action$ =>
+  action$.ofType(ADD_COL)
+    .map(function (action) {
+      var dupdata = [];
+      Observable.from(action.payload).concatMap(function (row) {
+        row[row.length] = { "value": "", "color": "", "fx": {}, "dep": [], "url": "" };
+        return Observable.of(row);
+      }).subscribe(function (val) { dupdata.push(val) });
+      return ColAdded(dupdata);
+    });
+
+export const ApplyFunctionEpic = action$ =>
+  action$.ofType(APPLY_FUNCTION)
+    .map(function (action) {
+      var data = action.payload.data;
+      var i = action.payload.i;
+      var j = action.payload.j;
+      var op1i = action.payload.op1i;
+      var op1j = action.payload.op1j;
+      var op2i = action.payload.op2i;
+      var op2j = action.payload.op2j;
+      var ans = action.payload.ans;
+      var color = action.payload.color;
+      var a = action.payload.a;
+      let alpha = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+      debugger;
+      Observable.of(data).map(function (data) {
+
+        if (data[i][j]["fx"]["op1i"]) {
+          data[data[i][j]["fx"]["op1i"]][data[i][j]["fx"]["op1j"]]["dep"].map(function (obj, q) {
+            if (obj["row"] == i && obj["column"] == j) {
+              data[data[i][j]["fx"]["op1i"]][data[i][j]["fx"]["op1j"]]["dep"].splice(q, 1);
+            }
+          });
+          data[i][j]["fx"]["formula"] = "";
+          delete data[i][j]["fx"]["op1i"];
+          delete data[i][j]["fx"]["op1j"];
+          data[i][j]["fx"] = {};
+        }
+        if (data[i][j]["fx"]["op2i"]) {
+          data[data[i][j]["fx"]["op2i"]][data[i][j]["fx"]["op2j"]]["dep"].map(function (obj, q) {
+            if (obj["row"] == i && obj["column"] == j) {
+              data[data[i][j]["fx"]["op2i"]][data[i][j]["fx"]["op2j"]]["dep"].splice(q, 1);
+            }
+          });
+          data[i][j]["fx"]["formula"] = "";
+          delete data[i][j]["fx"]["op2i"];
+          delete data[i][j]["fx"]["op2j"];
+          data[i][j]["fx"] = {};
+        }
+        if (op1i !== "") {
+          var flag1 = 0;
+          if (data[op1i][op1j]["dep"].length) {
+            flag1 = data[op1i][op1j]["dep"].map(function (obj) {
+              if (obj['row'] == i) {
+                if (obj['column'] == j) {
+                  return 1;
+                }
+              }
+            });
+          }
+          if (flag1 == 0) {
+            data[op1i][op1j]["dep"].push({ "row": i, "column": j });
+            data[i][j]["fx"]["op1i"] = op1i;
+            data[i][j]["fx"]["op1j"] = op1j;
+          }
+        }
+
+        if (op2i !== "") {
+          var flag2 = 0;
+          if (data[op2i][op2j]["dep"].length) {
+            flag2 = data[op2i][op2j]["dep"].map(function (obj) {
+              if (obj['row'] == i) {
+                if (obj['column'] == j) {
+                  return 1;
+                }
+              }
+            });
+          }
+          if (flag2 == 0) {
+            data[op2i][op2j]["dep"].push({ "row": i, "column": j });
+            data[i][j]["fx"]["op2i"] = op2i;
+            data[i][j]["fx"]["op2j"] = op2j;
+          }
+        }
+
+        data[i][j]["fx"]["formula"] = a;
+        data[i][j]["color"] = color;
+        data[i][j]['value'] = ans;
+
+        return data;
+      }).subscribe(() => { });
+      return { type: APPLIED_FUNC, payload: data };
+    });
+
+export const urlwork = (payload, i, j) => (
+  {
+    type: GET_URL,
+    payload: payload,
+    i: i,
+    j: j
+  });
+
+
+export const RowAdded = payload => (
+  {
+    type: ADDED_ROW,
+    payload
+  });
+
+export const ColAdded = payload => (
+  {
+    type: ADDED_COL,
+    payload
+  });
+
+export function addData(data) {
+  return {
+    type: ADD_DATA,
+    payload: data
+  };
+};
+
+export function addColData(data) {
+  return {
+    type: ADD_COL,
+    payload: data
+  };
+};
 
 export const fetchUserFulfilled = payload => (
   {
@@ -40,17 +225,16 @@ export function fetchData() {
   }
 };
 
-export function fetchUrlData(data) {
-  return {
-    type: FETCH_FULL,
-    payload: data
-  };
-};
-
-
 export function postData(data) {
+  debugger;
+  data.map(function (row) {
+    row.map(function (col, j) {
+      row[j]['color'] = "";
+    });
+  });
   return {
-    type: POST_DATA
+    type: POST_DATA,
+    payload: data
   }
 };
 
@@ -65,18 +249,6 @@ export function deleteCol(colno) {
   return {
     type: DELETE_COL,
     payload: colno
-  };
-};
-
-export function addData() {
-  return {
-    type: ADD_DATA
-  };
-};
-
-export function addColData() {
-  return {
-    type: ADD_COL
   };
 };
 
@@ -114,24 +286,27 @@ export function changeColor(i, j, color) {
   };
 };
 
-export function writeUrl(i, j, urlTest, timer) {
+export function writeUrl(i, j, urlTest, data) {
+  debugger;
   return {
     type: INSERTUrl,
     payload: {
       i: i,
       j: j,
       urlTest: urlTest,
-      timer: timer
+      data: data
     }
   };
 };
 
-export function runUrl(i, j) {
+export function runUrl(i, j, url, timer) {
   return {
     type: RUN_URL,
     payload: {
       i: i,
-      j: j
+      j: j,
+      url: url,
+      timer: timer
     }
   };
 };
