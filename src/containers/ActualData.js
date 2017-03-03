@@ -15,14 +15,16 @@ import { deleteCol } from '../actions/index';
 import { addColData } from '../actions/index';
 import { checkIntegerAction } from '../actions/index';
 import { fetchUserFulfilled } from '../actions/index';
-import { fetchUrlData } from '../actions/index';
 import { writeUrl } from '../actions/index';
 import { runUrl } from '../actions/index';
 import { stringColor } from '../actions/index';
 import { changeColor } from '../actions/index';
 import { fetchData } from '../actions/index';
-
+export var interval;
 require("babel-polyfill");
+export function setValue(newValue) {
+    clearInterval(interval);
+}
 
 class ActualData extends Component {
     constructor(props) {
@@ -32,52 +34,34 @@ class ActualData extends Component {
         this.flag = 0;
     }
 
-    // componentDidUpdate() {
-    //     var me = this;
-    //     if (!(me.flag)) {
-    //         var dupdata = this.props.data;
-    //         dupdata.map(function (row, i) {
-    //             row.map(function (col, j) {
-    //                 if (row[j]["url"].length > 0) {
-    //                     me.checkBlur(i, j, row[j]["url"]);
-    //                 }
-    //             });
-    //         });
-    //     }
-    //     me.flag = 1;
-    // }
-
     componentDidUpdate() {
         var me = this;
         if (!(me.flag)) {
             var dupdata = this.props.data;
-            var stream$ = Observable.from(dupdata).map(function (row,i){
-               var x = row.map(function(col,j){
-                    if(col['url'].length > 0)
-                    {
-                        return [col['url'],i,j];
+            var stream$ = Observable.from(dupdata).map(function (row, i) {
+                var x = row.map(function (col, j) {
+                    if (col['url'].length > 0) {
+                        return [col['url'], i, j];
                     }
                     return 1;
                 });
-                for(var k =0; k<x.length;k++)
-                {
-                    if(x[k] != 1)
+                for (var k = 0; k < x.length; k++) {
+                    if (x[k] != 1)
                         return x[k];
                 }
-                        
             });
-            stream$.subscribe(function(url){
-                me.checkBlur(url[1],url[2],url[0]);
-            },function(err){
+            stream$.subscribe(function (url) {
+                if (url) {
+                    me.checkBlur(url[1], url[2], url[0]);
+                }
+            }, function (err) {
                 console.log(err);
-            }); 
-        me.flag = 1;
+            });
+            me.flag = 1;
+        }
     }
-}
-
 
     checkBlur(i, j, q, event) {
-        console.log(i,j);
         var dupdata = this.props.data;
         var me = this;
         let len = dupdata[0].length;
@@ -87,7 +71,6 @@ class ActualData extends Component {
             target = q;
         else
             target = event.target.innerText;
-        // Observable.of(target).if(() => target == parseInt(target,10), console.log("Number"),console.log("NO"));
         if (dupdata[i][j]["value"] != target) {
             if (this.prevValue[this.prevValue.length - 1] != target) {
                 if (target == parseInt(target, 10) || target == "") {
@@ -115,63 +98,71 @@ class ActualData extends Component {
                                     break;
                             }
                             num = Number(num);
-                            var op1 = num;
-                            if (target[z] == ')') {
-                                target = num;
-                                this.props.stringColor(i, j, target, "darkblue");
+                            if (Number.isNaN(num)) {
+                                this.props.stringColor(i, j, target, "red");
                                 var me = this;
                                 setTimeout(function () { me.props.changeColor(i, j, "black"); }, 500);
                             }
                             else {
-                                if (target[z] == '+' || target[z] == '-') {
-                                    var operator = target[z];
-                                    z = z + 1;
-                                    if (target[z] == parseInt(target[z], 10)) {
-                                        let c = z, numb = "";
-                                        while (target[c] != ')') {
-                                            numb = numb + target[c++];
-                                        }
-                                        numb = Number(numb);
-                                        var op2 = numb;
-                                        if (operator == '+')
-                                            target = op1 + op2;
-                                        else
-                                            target = op1 - op2;
-                                        this.props.stringColor(i, j, target, "darkblue");
-                                        var me = this;
-                                        setTimeout(function () { me.props.changeColor(i, j, "black"); }, 500);
-                                    }
-                                    else if (alpha.indexOf(target[z]) > -1 && alpha.indexOf(target[z]) < len) {
-                                        let k = z + 1, nu = "";
-                                        while (target[k] !== ')') {
-                                            nu = nu + target[k++];
-                                        }
-                                        nu = Number(nu);
-                                        if (dupdata[nu - 1]) {
-                                            var op2i = nu - 1;
-                                            var op2j = alpha.indexOf(target[z]);
-                                            this.props.applyFunc(j, target, i, this.props.data, "darkblue", op1, "", "", "", op2i, op2j, operator);
+                                var op1 = num;
+                                if (target[z] == ')') {
+                                    target = num;
+                                    this.props.stringColor(i, j, target, "darkblue");
+                                    var me = this;
+                                    setTimeout(function () { me.props.changeColor(i, j, "black"); }, 500);
+                                }
+                                else {
+                                    if (target[z] == '+' || target[z] == '-') {
+                                        var operator = target[z];
+                                        z = z + 1;
+                                        if (target[z] == parseInt(target[z], 10)) {
+                                            let c = z, numb = "";
+                                            while (target[c] != ')') {
+                                                numb = numb + target[c++];
+                                            }
+                                            numb = Number(numb);
+                                            var op2 = numb;
+                                            if (operator == '+')
+                                                target = op1 + op2;
+                                            else
+                                                target = op1 - op2;
+                                            this.props.stringColor(i, j, target, "darkblue");
                                             var me = this;
                                             setTimeout(function () { me.props.changeColor(i, j, "black"); }, 500);
                                         }
+                                        else if (alpha.indexOf(target[z]) > -1 && alpha.indexOf(target[z]) < len) {
+                                            let k = z + 1, nu = "";
+                                            while (target[k] !== ')') {
+                                                nu = nu + target[k++];
+                                            }
+                                            nu = Number(nu);
+                                            if (dupdata[nu - 1]) {
+                                                var op2i = nu - 1;
+                                                var op2j = alpha.indexOf(target[z]);
+                                                this.props.applyFunc(j, target, i, this.props.data, "darkblue", op1, "", "", "", op2i, op2j, operator);
+                                                var me = this;
+                                                setTimeout(function () { me.props.changeColor(i, j, "black"); }, 500);
+                                            }
+                                            else {
+                                                this.props.stringColor(i, j, target, "red");
+                                                var me = this;
+                                                setTimeout(function () { me.props.changeColor(i, j, "black"); }, 500);
+                                            }
+                                        }
                                         else {
-                                            this.props.stringColor(i, j, target, "darkblue");
+                                            this.props.stringColor(i, j, target, "red");
                                             var me = this;
                                             setTimeout(function () { me.props.changeColor(i, j, "black"); }, 500);
                                         }
                                     }
                                     else {
-                                        this.props.stringColor(i, j, target, "darkblue");
+                                        this.props.stringColor(i, j, target, "red");
                                         var me = this;
                                         setTimeout(function () { me.props.changeColor(i, j, "black"); }, 500);
                                     }
                                 }
-                                else {
-                                    this.props.stringColor(i, j, target, "darkblue");
-                                    var me = this;
-                                    setTimeout(function () { me.props.changeColor(i, j, "black"); }, 500);
-                                }
                             }
+
                         }
                         else if (alpha.indexOf(target[2]) > -1 && alpha.indexOf(target[2]) < len) {
                             let z = 3, num = "";
@@ -220,32 +211,32 @@ class ActualData extends Component {
                                                 setTimeout(function () { me.props.changeColor(i, j, "black"); }, 500);
                                             }
                                             else {
-                                                this.props.stringColor(i, j, target, "darkblue");
+                                                this.props.stringColor(i, j, target, "red");
                                                 var me = this;
                                                 setTimeout(function () { me.props.changeColor(i, j, "black"); }, 500);
                                             }
                                         }
                                         else {
-                                            this.props.stringColor(i, j, target, "darkblue");
+                                            this.props.stringColor(i, j, target, "red");
                                             var me = this;
                                             setTimeout(function () { me.props.changeColor(i, j, "black"); }, 500);
                                         }
                                     }
                                     else {
-                                        this.props.stringColor(i, j, target, "darkblue");
+                                        this.props.stringColor(i, j, target, "red");
                                         var me = this;
                                         setTimeout(function () { me.props.changeColor(i, j, "black"); }, 500);
                                     }
                                 }
                             }
                             else {
-                                this.props.stringColor(i, j, target, "darkblue");
+                                this.props.stringColor(i, j, target, "red");
                                 var me = this;
                                 setTimeout(function () { me.props.changeColor(i, j, "black"); }, 500);
                             }
                         }
                         else {
-                            this.props.stringColor(i, j, target, "darkblue");
+                            this.props.stringColor(i, j, target, "red");
                             var me = this;
                             setTimeout(function () { me.props.changeColor(i, j, "black"); }, 500);
                         }
@@ -256,9 +247,9 @@ class ActualData extends Component {
                         var urlTest = target.slice(4, target.indexOf(','));
                         var timer = target.slice(target.indexOf(',') + 1, target.indexOf(')'));
                         if (regex.test(urlTest)) {
-                            this.props.writeUrl(i, j, target, timer);
-                            this.props.runUrl(i, j);
-                            setInterval(() => { this.props.runUrl(i, j) }, timer);
+                            this.props.writeUrl(i, j, target,dupdata);
+                            this.props.runUrl(i, j, urlTest, timer);
+                            interval = setInterval(() => { this.props.runUrl(i, j, urlTest, timer) }, timer);
                         }
                         else {
                             this.props.stringColor(i, j, target, "red");
@@ -288,11 +279,11 @@ class ActualData extends Component {
     }
 
     addRow = () => {
-        this.props.addData();
+        this.props.addData(this.props.data[0]);
     }
 
     addColumn = () => {
-        this.props.addColData();
+        this.props.addColData(this.props.data);
     }
 
     refFxCallback = (fxelem) => {
@@ -450,7 +441,6 @@ function mapDispatchToProps(dispatch) {
         deleteCol: bindActionCreators(deleteCol, dispatch),
         addColData: bindActionCreators(addColData, dispatch),
         inputEdit: bindActionCreators(inputEdit, dispatch),
-        fetchUrlData: bindActionCreators(fetchUrlData, dispatch),
         writeUrl: bindActionCreators(writeUrl, dispatch),
         runUrl: bindActionCreators(runUrl, dispatch),
         stringColor: bindActionCreators(stringColor, dispatch),
