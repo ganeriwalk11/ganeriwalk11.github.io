@@ -2,6 +2,7 @@ import Rx from 'rxjs';
 import { ajax } from 'rxjs/observable/dom/ajax';
 import { Observable } from 'rxjs/Observable';
 import axios from 'axios';
+import { setValue } from '../containers/ActualData';
 
 import { SAVE_DATA } from '../actions/index';
 import { FETCH_DATA } from '../actions/index';
@@ -12,14 +13,13 @@ import { ADDED_ROW } from '../actions/index';
 import { ADDED_COL } from '../actions/index';
 import { CHECK_INTEGER } from '../actions/index';
 import { APPLY_FUNCTION } from '../actions/index';
-import { APPLIED_FUNC } from '../actions/index';
 import { S_COLOR } from '../actions/index';
 import { CHANGE_COLOR } from '../actions/index';
 import { RUN_URL } from '../actions/index';
 import { GET_URL } from '../actions/index';
 import { ADDED_URL } from '../actions/index';
 import { REJECTED_URL } from '../actions/index';
-import { setValue } from '../containers/ActualData';
+import { DUMMY } from '../actions/index';
 
 const rxFetch = require('rxjs-fetch');
 const urla = 'http://localhost:5000/';
@@ -36,12 +36,14 @@ export default function (state = [], action) {
 
     case FETCH_FUL:
       {
-        if (action.payload[0]) {
-          var head = Object.keys(action.payload[0]);
-          var len = head.length;
-        }
         var data = action.payload;
-        return (data);
+        return data;
+        break;
+      }
+
+    case SAVE_DATA:
+      {
+        return state;
         break;
       }
 
@@ -57,6 +59,39 @@ export default function (state = [], action) {
       {
         return action.payload;
         break;
+      }
+
+      case DUMMY: 
+      {
+        return state;
+      }
+    case ADDED_URL:
+      {
+        var data = action.payload;
+        return data;
+        break;
+      }
+
+    case GET_URL:
+      {
+        var data = [...state];
+        var i = action.i;
+        var j = action.j;
+        var val = action.payload;
+        data[i][j]['value'] = val['a'];
+        return data;
+      }
+
+    case REJECTED_URL:
+      {
+        var data = [...state];
+        var i = action.i;
+        var j = action.j;
+        var val = action.payload;
+        data[i][j]['value'] = "ERROR";
+        data[i][j]['url'] = "";
+        setValue(0);
+        return data;
       }
 
     case CHECK_INTEGER:
@@ -93,7 +128,7 @@ export default function (state = [], action) {
         var i = action.payload.i;
         var j = action.payload.j;
         var color = action.payload.color;
-        if (data[i][j]["fx"]["op1i"]) {
+        if ("op1i" in data[i][j]["fx"]) {
           data[data[i][j]["fx"]["op1i"]][data[i][j]["fx"]["op1j"]]["dep"].map(function (obj, q) {
             if (obj["row"] == i && obj["column"] == j) {
               data[data[i][j]["fx"]["op1i"]][data[i][j]["fx"]["op1j"]]["dep"].splice(q, 1);
@@ -104,7 +139,7 @@ export default function (state = [], action) {
           delete data[i][j]["fx"]["op1j"];
           data[i][j]["fx"] = {};
         }
-        if (data[i][j]["fx"]["op2i"]) {
+        if ("op2i" in data[i][j]["fx"]) {
           data[data[i][j]["fx"]["op2i"]][data[i][j]["fx"]["op2j"]]["dep"].map(function (obj, q) {
             if (obj["row"] == i && obj["column"] == j) {
               data[data[i][j]["fx"]["op2i"]][data[i][j]["fx"]["op2j"]]["dep"].splice(q, 1);
@@ -118,42 +153,6 @@ export default function (state = [], action) {
         data[i][j]['color'] = color;
         data[i][j]['value'] = action.payload.target;
         return data;
-        break;
-      }
-
-    case ADDED_URL:
-      {
-        var data = action.payload;
-        return data;
-        break;
-      }
-
-    case GET_URL:
-      {
-        var data = [...state];
-        var i = action.i;
-        var j = action.j;
-        var val = action.payload;
-        data[i][j]['value'] = val['a'];
-        return data;
-      }
-
-    case REJECTED_URL:
-      {
-        var data = [...state];
-        var i = action.i;
-        var j = action.j;
-        var val = action.payload;
-        data[i][j]['value'] = "ERROR";
-        data[i][j]['url'] = "";
-        setValue(0);
-        return data;
-      }
-
-    case SAVE_DATA:
-      {
-        console.log(action.payload);
-        return state;
         break;
       }
 
@@ -171,28 +170,27 @@ export default function (state = [], action) {
         var data = [...state];
         let alpha = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
 
-        if (data[i][j]["fx"]["op1i"]) {
+        if ("op1i" in data[i][j]["fx"]) {
           data[data[i][j]["fx"]["op1i"]][data[i][j]["fx"]["op1j"]]["dep"].map(function (obj, q) {
             if (obj["row"] == i && obj["column"] == j) {
               data[data[i][j]["fx"]["op1i"]][data[i][j]["fx"]["op1j"]]["dep"].splice(q, 1);
             }
           });
-          data[i][j]["fx"]["formula"] = "";
-          delete data[i][j]["fx"]["op1i"];
-          delete data[i][j]["fx"]["op1j"];
-          data[i][j]["fx"] = {};
         }
-        if (data[i][j]["fx"]["op2i"]) {
+
+        if ("op2i" in data[i][j]["fx"]) {
           data[data[i][j]["fx"]["op2i"]][data[i][j]["fx"]["op2j"]]["dep"].map(function (obj, q) {
             if (obj["row"] == i && obj["column"] == j) {
               data[data[i][j]["fx"]["op2i"]][data[i][j]["fx"]["op2j"]]["dep"].splice(q, 1);
             }
           });
-          data[i][j]["fx"]["formula"] = "";
-          delete data[i][j]["fx"]["op2i"];
-          delete data[i][j]["fx"]["op2j"];
-          data[i][j]["fx"] = {};
         }
+
+        data[i][j]["fx"]["formula"] = "";
+        delete data[i][j]["fx"]["op1i"];
+        delete data[i][j]["fx"]["op1j"];
+        data[i][j]["fx"] = {};
+
         if (op1i !== "") {
           data[op1i][op1j]["dep"].push({ "row": i, "column": j });
           data[i][j]["fx"]["op1i"] = op1i;
@@ -206,6 +204,7 @@ export default function (state = [], action) {
         data[i][j]["fx"]["formula"] = a;
         data[i][j]["color"] = color;
         data[i][j]['value'] = ans;
+        console.log(data)
         return data;
         break;
       }
@@ -236,7 +235,7 @@ export default function (state = [], action) {
             }
           }
           if (Object.keys(col["fx"]).length > 0) {
-            if (col["fx"]["op1i"]) {
+            if ("op1i" in col["fx"]) {
               var op1i = col["fx"]["op1i"];
               var op1j = col["fx"]["op1j"];
               data[op1i][op1j]["dep"].map(function (depRow, l) {
@@ -245,7 +244,7 @@ export default function (state = [], action) {
                 }
               });
             }
-            if (col["fx"]["op2i"]) {
+            if ("op2i" in col["fx"]) {
               var op2i = col["fx"]["op2i"];
               var op2j = col["fx"]["op2j"];
               data[op2i][op2j]["dep"].map(function (depRow, l) {
@@ -320,7 +319,7 @@ export default function (state = [], action) {
           }
 
           if (Object.keys(row[colNo]["fx"]).length > 0) {
-            if (row[colNo]["fx"]["op1i"]) {
+            if ("op1i" in row[colNo]["fx"]) {
               var op1i = row[colNo]["fx"]["op1i"];
               var op1j = row[colNo]["fx"]["op1j"];
               data[op1i][op1j]["dep"].map(function (depRow, l) {
@@ -329,7 +328,7 @@ export default function (state = [], action) {
                 }
               });
             }
-            if (row[colNo]["fx"]["op2i"]) {
+            if ("op2i" in row[colNo]["fx"]) {
               var op2i = row[colNo]["fx"]["op2i"];
               var op2j = row[colNo]["fx"]["op2j"];
               data[op2i][op2j]["dep"].map(function (depRow, l) {
@@ -376,11 +375,6 @@ export default function (state = [], action) {
         });
         return data;
         break;
-      }
-      case APPLIED_FUNC:
-      {
-        console.log(action.payload);
-        return state;
       }
   }
   return state;
